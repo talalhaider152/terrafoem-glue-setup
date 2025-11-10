@@ -4,9 +4,7 @@
 # Crash logs
 crash.log
 crash.*.log
-# Sensitive override files
-*.tfvars
-*.tfvars.json
+
 # Local Terraform directories
 .terraform/
 .terraform.lock.hcl

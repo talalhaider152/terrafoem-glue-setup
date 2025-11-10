@@ -147,6 +147,122 @@ resource "aws_iam_role_policy_attachment" "backend" {
   policy_arn = aws_iam_policy.backend.arn
 }
 
+# Permissions for managing Glue infrastructure (IAM roles, S3 buckets, Glue jobs)
+data "aws_iam_policy_document" "glue_infrastructure" {
+  # IAM permissions - ListRoles doesn't require resource restrictions
+  statement {
+    sid    = "IAMListRoles"
+    effect = "Allow"
+    actions = [
+      "iam:ListRoles"
+    ]
+    resources = ["*"]
+  }
+
+  # IAM permissions for Glue roles
+  statement {
+    sid    = "IAMRoleManagement"
+    effect = "Allow"
+    actions = [
+      "iam:GetRole",
+      "iam:CreateRole",
+      "iam:UpdateRole",
+      "iam:DeleteRole",
+      "iam:GetRolePolicy",
+      "iam:PutRolePolicy",
+      "iam:DeleteRolePolicy",
+      "iam:ListRolePolicies",
+      "iam:ListAttachedRolePolicies",
+      "iam:AttachRolePolicy",
+      "iam:DetachRolePolicy",
+      "iam:PassRole"
+    ]
+    resources = [
+      "arn:aws:iam::*:role/glue-*",
+      "arn:aws:iam::*:role/*-glue-*"
+    ]
+  }
+
+  # S3 permissions for Glue script buckets
+  statement {
+    sid    = "S3BucketManagement"
+    effect = "Allow"
+    actions = [
+      "s3:CreateBucket",
+      "s3:DeleteBucket",
+      "s3:GetBucketLocation",
+      "s3:ListBucket",
+      "s3:GetBucketVersioning",
+      "s3:PutBucketVersioning",
+      "s3:GetBucketAcl",
+      "s3:PutBucketAcl",
+      "s3:GetBucketPublicAccessBlock",
+      "s3:PutBucketPublicAccessBlock"
+    ]
+    resources = [
+      "arn:aws:s3:::*-glue-*",
+      "arn:aws:s3:::dev-*",
+      "arn:aws:s3:::prod-*"
+    ]
+  }
+
+  statement {
+    sid    = "S3ObjectManagement"
+    effect = "Allow"
+    actions = [
+      "s3:PutObject",
+      "s3:GetObject",
+      "s3:DeleteObject",
+      "s3:HeadObject",
+      "s3:ListObjects",
+      "s3:ListObjectsV2"
+    ]
+    resources = [
+      "arn:aws:s3:::*-glue-*/*",
+      "arn:aws:s3:::dev-*/*",
+      "arn:aws:s3:::prod-*/*"
+    ]
+  }
+
+  # Glue permissions
+  statement {
+    sid    = "GlueJobManagement"
+    effect = "Allow"
+    actions = [
+      "glue:CreateJob",
+      "glue:UpdateJob",
+      "glue:DeleteJob",
+      "glue:GetJob",
+      "glue:ListJobs",
+      "glue:GetJobRun",
+      "glue:ListJobRuns",
+      "glue:StartJobRun",
+      "glue:StopJobRun",
+      "glue:BatchStopJobRun",
+      "glue:GetJobRuns",
+      "glue:GetConnection",
+      "glue:GetConnections",
+      "glue:GetDatabase",
+      "glue:GetDatabases",
+      "glue:GetTable",
+      "glue:GetTables",
+      "glue:GetPartition",
+      "glue:GetPartitions"
+    ]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_policy" "glue_infrastructure" {
+  name   = "${var.actions_role_name}-glue-infrastructure"
+  policy = data.aws_iam_policy_document.glue_infrastructure.json
+}
+
+resource "aws_iam_role_policy_attachment" "glue_infrastructure" {
+  role       = aws_iam_role.github_actions.name
+  policy_arn = aws_iam_policy.glue_infrastructure.arn
+}
+
 resource "aws_iam_role_policy_attachment" "additional" {
   for_each   = toset(var.additional_policy_arns)
   role       = aws_iam_role.github_actions.name

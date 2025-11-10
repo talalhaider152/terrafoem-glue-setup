@@ -1,0 +1,22 @@
+name: Test Push Trigger
+
+on:
+  push: {}
+
+jobs:
+  test-push:
+    name: Test workflow on push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show Git ref
+        run: |
+          echo "Triggered by $GITHUB_EVENT_NAME"
+          echo "Ref: $GITHUB_REF"
+          echo "SHA: $GITHUB_SHA"
+          echo "Repository: $GITHUB_REPOSITORY"
+
+      - name: Print a test message
+        run: echo "✅ GitHub Actions is running for push events."
