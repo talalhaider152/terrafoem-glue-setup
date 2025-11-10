@@ -158,8 +158,7 @@ jobs:
         id: apply
         if: |
           steps.plan.outcome == 'success' && 
-          (github.event_name == 'push' || 
-           (github.event_name == 'pull_request' && steps.approval.outcome == 'success'))
+          github.event_name == 'push'
         run: terraform apply -input=false -auto-approve tfplan
 
       - name: Comment Apply Result on PR
