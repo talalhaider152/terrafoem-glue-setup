@@ -8,10 +8,6 @@ terraform {
     }
   }
 
-
-
-
-
   backend "s3" {
     bucket         = "remote-backend-spectre"
     key            = "glue-setup/terraform.tfstate"
