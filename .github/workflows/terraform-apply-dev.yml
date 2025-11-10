@@ -1,0 +1,56 @@
+name: Terraform Apply (dev)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type 'apply' to confirm applying to dev"
+        required: true
+        default: "apply"
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  apply-dev:
+    if: ${{ github.event.inputs.confirm == 'apply' }}
+    name: terraform apply (dev)
+    runs-on: ubuntu-latest
+    environment: dev
+    defaults:
+      run:
+        shell: bash
+        working-directory: .
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.5
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Terraform Init
+        run: terraform init -input=false
+
+      - name: Select workspace
+        run: |
+          terraform workspace select dev || terraform workspace new dev
+
+      - name: Terraform Validate
+        run: terraform validate -no-color
+
+      - name: Terraform Plan (for log)
+        run: terraform plan -input=false -no-color -var-file="dev.tfvars" | tee plan.out
+
+      - name: Terraform Apply
+        run: terraform apply -input=false -auto-approve -var-file="dev.tfvars"
+
+

@@ -15,6 +15,11 @@ resource "aws_iam_role" "this" {
       },
     ]
   })
+
+  lifecycle {
+    # Prevent recreation if role already exists with different config
+    create_before_destroy = true
+  }
 }
 
 resource "aws_iam_role_policy" "this" {

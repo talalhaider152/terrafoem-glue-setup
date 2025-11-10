@@ -16,7 +16,7 @@ glueContext = GlueContext(sc)
 spark = glueContext.spark_session
 job = Job(glueContext)
 job.init(args['JOB_NAME'], args)
-# Default data quality rule
+
 DEFAULT_DATA_QUALITY_RULESET = """
     Rules = [
         ColumnCount > 0

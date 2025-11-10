@@ -6,5 +6,5 @@ output "bucket_name" {
 
 output "script_key" {
   description = "The key of the script in the S3 bucket."
-  value       = aws_s3_bucket_object.script.key
+  value       = aws_s3_object.script.key
 }
