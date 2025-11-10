@@ -149,6 +149,16 @@ resource "aws_iam_role_policy_attachment" "backend" {
 
 # Permissions for managing Glue infrastructure (IAM roles, S3 buckets, Glue jobs)
 data "aws_iam_policy_document" "glue_infrastructure" {
+  # IAM permissions - ListRoles doesn't require resource restrictions
+  statement {
+    sid    = "IAMListRoles"
+    effect = "Allow"
+    actions = [
+      "iam:ListRoles"
+    ]
+    resources = ["*"]
+  }
+
   # IAM permissions for Glue roles
   statement {
     sid    = "IAMRoleManagement"
@@ -158,7 +168,6 @@ data "aws_iam_policy_document" "glue_infrastructure" {
       "iam:CreateRole",
       "iam:UpdateRole",
       "iam:DeleteRole",
-      "iam:ListRoles",
       "iam:GetRolePolicy",
       "iam:PutRolePolicy",
       "iam:DeleteRolePolicy",
