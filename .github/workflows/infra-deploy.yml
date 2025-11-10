@@ -1,0 +1,188 @@
+name: Infrastructure Deployment
+
+on:
+  pull_request:
+    branches:
+      - master
+      - dev
+    paths:
+      - "**/*.tf"
+      - "**/*.tfvars"
+  push:
+    branches:
+      - master
+      - dev
+    paths:
+      - "**/*.tf"
+      - "**/*.tfvars"
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  deploy:
+    name: Terraform Deploy
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: .
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Determine environment
+        id: env
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/master" ]] || [[ "${{ github.base_ref }}" == "master" ]]; then
+            echo "environment=prod" >> $GITHUB_OUTPUT
+            echo "workspace=prod" >> $GITHUB_OUTPUT
+            echo "tfvars_file=prod.tfvars" >> $GITHUB_OUTPUT
+          else
+            echo "environment=dev" >> $GITHUB_OUTPUT
+            echo "workspace=dev" >> $GITHUB_OUTPUT
+            echo "tfvars_file=dev.tfvars" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.5
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Init
+        run: terraform init -input=false
+
+      - name: Select Workspace
+        run: |
+          terraform workspace select ${{ steps.env.outputs.workspace }} || terraform workspace new ${{ steps.env.outputs.workspace }}
+
+      - name: Terraform Validate
+        run: terraform validate -no-color
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -input=false -no-color -var-file="${{ steps.env.outputs.tfvars_file }}" -out=tfplan
+        continue-on-error: true
+
+      - name: Upload Plan
+        if: steps.plan.outcome == 'success' || steps.plan.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan-${{ steps.env.outputs.environment }}
+          path: tfplan
+          retention-days: 5
+
+      - name: Comment Plan on PR
+        if: github.event_name == 'pull_request' && steps.plan.outcome == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const { execSync } = require('child_process');
+            
+            try {
+              let planOutput = 'Plan completed successfully.';
+              if (fs.existsSync('tfplan')) {
+                planOutput = execSync('terraform show -no-color tfplan', { encoding: 'utf-8' });
+              }
+              const maxLen = 65000;
+              const truncated = planOutput.length > maxLen 
+                ? planOutput.substring(0, maxLen) + '\n\n[...truncated...]' 
+                : planOutput;
+              
+              const body = [
+                `## 🔍 Terraform Plan - ${{ steps.env.outputs.environment }} Environment`,
+                '',
+                '```',
+                truncated,
+                '```'
+              ].join('\n');
+              
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body
+              });
+            } catch (error) {
+              console.error('Error creating plan comment:', error.message);
+            }
+
+      - name: Await for manual approval
+        id: approval
+        if: steps.plan.outcome == 'success' && github.event_name == 'pull_request'
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ secrets.GITHUB_TOKEN }}
+          approvers: ${{ secrets.APPROVERS }}
+          minimum-approvals: 1
+          issue-title: "Manual Approval Required for Terraform Apply - ${{ steps.env.outputs.environment }}"
+          issue-body: |
+            ## Terraform Apply Approval Required
+            
+            **Environment**: ${{ steps.env.outputs.environment }}
+            **PR**: #${{ github.event.pull_request.number }}
+            **Branch**: ${{ github.event.pull_request.head.ref }}
+            **Author**: @${{ github.event.pull_request.user.login }}
+            
+            Please review the Terraform plan above and approve or deny the deployment by commenting:
+            - `approved` or `apply` to approve
+            - `denied` or `reject` to deny
+            
+            Once approved, the Terraform apply will automatically proceed.
+          exclude-workflow-initiator-as-approver: false
+
+      - name: Download Plan
+        if: |
+          steps.plan.outcome == 'success' && 
+          (github.event_name == 'push' || 
+           (github.event_name == 'pull_request' && steps.approval.outcome == 'success'))
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-plan-${{ steps.env.outputs.environment }}
+          path: .
+
+      - name: Terraform Apply
+        id: apply
+        if: |
+          steps.plan.outcome == 'success' && 
+          (github.event_name == 'push' || 
+           (github.event_name == 'pull_request' && steps.approval.outcome == 'success'))
+        run: terraform apply -input=false -auto-approve tfplan
+
+      - name: Comment Apply Result on PR
+        if: |
+          github.event_name == 'pull_request' && 
+          steps.plan.outcome == 'success' && 
+          steps.apply.outcome == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = [
+              `## ✅ Terraform Apply Completed - ${{ steps.env.outputs.environment }} Environment`,
+              '',
+              'Terraform apply has been completed successfully.',
+              '',
+              `**Environment**: ${{ steps.env.outputs.environment }}`,
+              `**Workspace**: ${{ steps.env.outputs.workspace }}`
+            ].join('\n');
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body
+            });
+
