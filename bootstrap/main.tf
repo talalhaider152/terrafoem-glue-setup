@@ -106,6 +106,7 @@ resource "aws_iam_role" "github_actions" {
 
 # Minimal permissions for Terraform backend (S3 + DynamoDB)
 data "aws_iam_policy_document" "backend" {
+  # Permissions for bootstrap state bucket
   statement {
     actions = [
       "s3:ListBucket",
@@ -121,6 +122,26 @@ data "aws_iam_policy_document" "backend" {
       "s3:DeleteObject"
     ]
     resources = ["${aws_s3_bucket.tf_state.arn}/*"]
+  }
+
+  # Permissions for actual Terraform state bucket (my-terraform-state-bucket-1762804809)
+  statement {
+    actions = [
+      "s3:ListBucket",
+      "s3:GetBucketLocation",
+      "s3:GetBucketVersioning"
+    ]
+    resources = ["arn:aws:s3:::my-terraform-state-bucket-1762804809"]
+  }
+
+  statement {
+    actions = [
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:DeleteObject",
+      "s3:HeadObject"
+    ]
+    resources = ["arn:aws:s3:::my-terraform-state-bucket-1762804809/*"]
   }
 
   statement {
