@@ -175,7 +175,9 @@ data "aws_iam_policy_document" "glue_infrastructure" {
       "iam:ListAttachedRolePolicies",
       "iam:AttachRolePolicy",
       "iam:DetachRolePolicy",
-      "iam:PassRole"
+      "iam:PassRole",
+      "iam:TagRole",
+      "iam:UntagRole"
     ]
     resources = [
       "arn:aws:iam::*:role/glue-*",
@@ -188,16 +190,7 @@ data "aws_iam_policy_document" "glue_infrastructure" {
     sid    = "S3BucketManagement"
     effect = "Allow"
     actions = [
-      "s3:CreateBucket",
-      "s3:DeleteBucket",
-      "s3:GetBucketLocation",
-      "s3:ListBucket",
-      "s3:GetBucketVersioning",
-      "s3:PutBucketVersioning",
-      "s3:GetBucketAcl",
-      "s3:PutBucketAcl",
-      "s3:GetBucketPublicAccessBlock",
-      "s3:PutBucketPublicAccessBlock"
+      "s3:*"
     ]
     resources = [
       "arn:aws:s3:::*-glue-*",
@@ -229,25 +222,7 @@ data "aws_iam_policy_document" "glue_infrastructure" {
     sid    = "GlueJobManagement"
     effect = "Allow"
     actions = [
-      "glue:CreateJob",
-      "glue:UpdateJob",
-      "glue:DeleteJob",
-      "glue:GetJob",
-      "glue:ListJobs",
-      "glue:GetJobRun",
-      "glue:ListJobRuns",
-      "glue:StartJobRun",
-      "glue:StopJobRun",
-      "glue:BatchStopJobRun",
-      "glue:GetJobRuns",
-      "glue:GetConnection",
-      "glue:GetConnections",
-      "glue:GetDatabase",
-      "glue:GetDatabases",
-      "glue:GetTable",
-      "glue:GetTables",
-      "glue:GetPartition",
-      "glue:GetPartitions"
+      "glue:*"
     ]
     resources = ["*"]
   }

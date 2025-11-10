@@ -11,6 +11,7 @@ permissions:
   id-token: write
   contents: read
   pull-requests: write
+  issues: write
 
 jobs:
   plan-dev:
@@ -63,17 +64,114 @@ jobs:
             const maxLen = 65000;
             const truncated = plan.length > maxLen ? plan.substring(0, maxLen) + '\n\n[...truncated...]' : plan;
             const body = [
-              'Terraform plan for env: dev',
+              '## Terraform Plan for dev environment',
               '',
               '```',
               truncated,
-              '```'
+              '```',
+              '',
+              '⚠️ **Approval required**: This plan requires approval before applying. The apply workflow will wait for approval.',
+              '',
+              '**Note**: When this PR is merged, plan and apply will run automatically.'
             ].join('\n');
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
               body
+            });
+
+      - name: Upload plan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan-dev
+          path: plan.out
+          retention-days: 5
+
+      - name: Create approval issue
+        if: ${{ github.event_name == 'pull_request' }}
+        id: create_issue
+        uses: actions/github-script@v7
+        env:
+          CODE_REVIEW: ${{ secrets.CODE_REVIEW }}
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const planPath = path.join(process.cwd(), 'plan.out');
+            const plan = fs.existsSync(planPath) ? fs.readFileSync(planPath, 'utf8') : 'No plan output found.';
+            const maxLen = 50000;
+            const truncated = plan.length > maxLen ? plan.substring(0, maxLen) + '\n\n[...truncated...]' : plan;
+            
+            // Get reviewers from secret
+            const reviewers = process.env.CODE_REVIEW 
+              ? process.env.CODE_REVIEW.split(',').map(u => u.trim()).filter(u => u)
+              : [];
+            
+            const issueBody = [
+              '## 🔍 Terraform Plan Approval Required - Dev Environment',
+              '',
+              `**PR**: #${context.issue.number}`,
+              `**Branch**: ${context.payload.pull_request.head.ref}`,
+              `**Author**: @${context.payload.pull_request.user.login}`,
+              '',
+              '### Plan Output:',
+              '```',
+              truncated,
+              '```',
+              '',
+              '---',
+              '',
+              '### ⚠️ Approval Required',
+              '',
+              'Please review the Terraform plan above and comment with one of the following to approve:',
+              '- `approved`',
+              '- `lgtm`',
+              '- `yes`',
+              '',
+              'Once approved, the Terraform apply will automatically start.',
+              '',
+              `**Workflow Run**: [View Plan Run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`,
+              '',
+              `**Issue ID**: ${context.runId}-${context.runNumber}`
+            ].join('\n');
+            
+            // Create issue
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[DEV] Terraform Apply Approval Required - PR #${context.issue.number}`,
+              body: issueBody,
+              labels: ['terraform', 'dev', 'approval-required']
+            });
+            
+            // Assign reviewers
+            if (reviewers.length > 0) {
+              try {
+                await github.rest.issues.addAssignees({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.data.number,
+                  assignees: reviewers
+                });
+                console.log(`Assigned reviewers: ${reviewers.join(', ')}`);
+              } catch (error) {
+                console.warn(`Could not assign reviewers: ${error.message}`);
+              }
+            }
+            
+            // Store issue number for later use
+            core.setOutput('issue_number', issue.data.number.toString());
+            core.setOutput('issue_url', issue.data.html_url);
+            
+            console.log(`Created approval issue #${issue.data.number}: ${issue.data.html_url}`);
+            
+            // Comment on PR with issue link
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `🔍 **Approval Required**: Please review and approve the Terraform plan in issue #${issue.data.number}\n\n${issue.data.html_url}`
             });
 
 
