@@ -8,7 +8,7 @@ max_capacity  = 4
 timeout       = 60
 
 github_oidc_role_name    = "github-actions-terraform-prod"
-github_oidc_repositories = ["spectre/terrafoem-glue-setup"]
+github_oidc_repositories = ["talalhaider152/terrafoem-glue-setup"]
 github_oidc_policy_arns  = ["arn:aws:iam::aws:policy/AdministratorAccess"]
 
 
