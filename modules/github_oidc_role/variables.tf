@@ -34,3 +34,9 @@ variable "policy_arns" {
   default     = []
 }
 
+variable "existing_oidc_provider_arn" {
+  description = "ARN of an existing GitHub OIDC provider to reuse. Leave empty to create a new provider."
+  type        = string
+  default     = ""
+}
+
