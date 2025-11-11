@@ -31,6 +31,7 @@ module "glue_job" {
   job_name        = var.job_name
   iam_role_arn    = module.iam_role.iam_role_arn
   script_location = "s3://${module.s3_bucket.bucket_name}/${module.s3_bucket.script_key}"
+  output_path     = "s3://${module.s3_bucket.bucket_name}/output/"
   max_capacity    = var.max_capacity
   timeout         = var.timeout
 }
