@@ -40,17 +40,17 @@ jobs:
           if [[ "${{ github.ref }}" == "refs/heads/master" ]] || [[ "${{ github.base_ref }}" == "master" ]]; then
             echo "environment=prod" >> $GITHUB_OUTPUT
             echo "workspace=prod" >> $GITHUB_OUTPUT
-            echo "tfvars_file=prod.tfvars" >> $GITHUB_OUTPUT
+            echo "tfvars_file=env/prod/prod.tfvars" >> $GITHUB_OUTPUT
           else
             echo "environment=dev" >> $GITHUB_OUTPUT
             echo "workspace=dev" >> $GITHUB_OUTPUT
-            echo "tfvars_file=dev.tfvars" >> $GITHUB_OUTPUT
+            echo "tfvars_file=env/dev/dev.tfvars" >> $GITHUB_OUTPUT
           fi
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.7.5
+          terraform_version: 1.6.6
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -138,8 +138,8 @@ jobs:
             **Author**: @${{ github.event.pull_request.user.login }}
             
             Please review the Terraform plan above and approve or deny the deployment by commenting:
-            - `approved` or `apply` to approve
-            - `denied` or `reject` to deny
+            - `approved`  to approve
+            - `denied`  to deny
             
             Once approved, the Terraform apply will automatically proceed.
           exclude-workflow-initiator-as-approver: false
@@ -159,7 +159,7 @@ jobs:
         if: |
           steps.plan.outcome == 'success' && 
           github.event_name == 'push'
-        run: terraform apply -input=false -auto-approve tfplan
+        run: terraform apply -input=false -no-color -var-file="${{ steps.env.outputs.tfvars_file }}"
 
       - name: Comment Apply Result on PR
         if: |
