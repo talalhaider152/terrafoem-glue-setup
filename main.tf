@@ -14,6 +14,15 @@ provider "aws" {
   region = var.region
 }
 
+module "github_oidc_role" {
+  source       = "./modules/github_oidc_role"
+  role_name    = var.github_oidc_role_name
+  repositories = var.github_oidc_repositories
+  audience     = var.github_oidc_audience
+  thumbprints  = var.github_oidc_thumbprints
+  policy_arns  = var.github_oidc_policy_arns
+}
+
 module "iam_role" {
   source    = "./modules/iam_role"
   role_name = var.role_name
@@ -36,4 +45,3 @@ module "glue_job" {
   timeout         = var.timeout
 }
 
-#testing

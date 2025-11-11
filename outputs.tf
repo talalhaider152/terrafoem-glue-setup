@@ -18,3 +18,13 @@ output "iam_role_arn" {
   description = "The ARN of the IAM role."
   value       = module.iam_role.iam_role_arn
 }
+
+output "github_oidc_role_arn" {
+  description = "ARN of the IAM role that GitHub Actions assumes."
+  value       = module.github_oidc_role.iam_role_arn
+}
+
+output "github_oidc_provider_arn" {
+  description = "ARN of the GitHub OIDC provider."
+  value       = module.github_oidc_role.openid_connect_provider_arn
+}
