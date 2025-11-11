@@ -36,4 +36,3 @@ module "glue_job" {
   timeout         = var.timeout
 }
 
-#testing
