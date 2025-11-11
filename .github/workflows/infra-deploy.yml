@@ -159,7 +159,7 @@ jobs:
         if: |
           steps.plan.outcome == 'success' && 
           github.event_name == 'push'
-        run: terraform apply -input=false -no-color -var-file="${{ steps.env.outputs.tfvars_file }}"
+        run: terraform apply -input=false -auto-approve -no-color -var-file="${{ steps.env.outputs.tfvars_file }}"
 
       - name: Comment Apply Result on PR
         if: |
@@ -170,7 +170,7 @@ jobs:
         with:
           script: |
             const body = [
-              `## ✅ Terraform Apply Completed - ${{ steps.env.outputs.environment }} Environment`,
+              `## Terraform Apply Completed - ${{ steps.env.outputs.environment }} Environment`,
               '',
               'Terraform apply has been completed successfully.',
               '',
