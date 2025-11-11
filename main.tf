@@ -21,6 +21,7 @@ module "github_oidc_role" {
   audience     = var.github_oidc_audience
   thumbprints  = var.github_oidc_thumbprints
   policy_arns  = var.github_oidc_policy_arns
+  existing_oidc_provider_arn = var.github_oidc_existing_provider_arn
 }
 
 module "iam_role" {
@@ -45,3 +46,4 @@ module "glue_job" {
   timeout         = var.timeout
 }
 
+#

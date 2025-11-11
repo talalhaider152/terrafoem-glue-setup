@@ -70,3 +70,9 @@ variable "github_oidc_thumbprints" {
     "1c58aeb9b3f0f13eb74365e2798f4a966f9b8f3c",
   ]
 }
+
+variable "github_oidc_existing_provider_arn" {
+  description = "ARN of an existing GitHub OIDC provider to reuse. Leave empty to create a new provider."
+  type        = string
+  default     = ""
+}
