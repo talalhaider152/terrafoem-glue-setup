@@ -12,5 +12,3 @@ github_oidc_repositories = ["talalhaider152/terrafoem-glue-setup"]
 github_oidc_policy_arns  = ["arn:aws:iam::aws:policy/AdministratorAccess"]
 github_oidc_existing_provider_arn = "arn:aws:iam::973516475030:oidc-provider/token.actions.githubusercontent.com"
 
-
-
