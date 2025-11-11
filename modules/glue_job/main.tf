@@ -8,7 +8,7 @@ resource "aws_glue_job" "this" {
   }
   glue_version = "5.0"
   default_arguments = {
-    "--output_path" = var.output_path
+    "--OUTPUT_PATH" = var.output_path
   }
   max_capacity = var.max_capacity
   timeout      = var.timeout
