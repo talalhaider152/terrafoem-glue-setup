@@ -6,6 +6,10 @@ resource "aws_glue_job" "this" {
     name            = "glueetl"
     script_location = var.script_location
   }
+  glue_version = "5.0"
+  default_arguments = {
+    "--output_path" = var.output_path
+  }
   max_capacity = var.max_capacity
   timeout      = var.timeout
 }

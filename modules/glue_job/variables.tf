@@ -23,3 +23,8 @@ variable "timeout" {
   description = "Timeout for the Glue job in minutes."
   type        = number
 }
+
+variable "output_path" {
+  description = "S3 output path the job should write to."
+  type        = string
+}
